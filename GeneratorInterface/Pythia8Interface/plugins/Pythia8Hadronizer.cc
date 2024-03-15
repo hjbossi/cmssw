@@ -153,6 +153,7 @@ private:
   //PDFPtr for the photonFlux
   //Following main70.cc example in PYTHIA8 v3.10
   bool doProtonPhotonFlux = false;
+  int beamType = 1000822080; // pb by default
   Pythia8::PDFPtr photonFlux = nullptr;
 
   //helper class to allow multiple user hooks simultaneously
@@ -224,7 +225,6 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params)
       comEnergy(params.getParameter<double>("comEnergy")),
       LHEInputFileName(params.getUntrackedParameter<std::string>("LHEInputFileName", "")),
       fInitialState(PP),
-      doProtonPhotonFlux(params.getUntrackedParameter<bool>("doProtonPhotonFlux", false)),
       UserHooksSet(false),
       nME(-1),
       nMEFiltered(-1),
@@ -259,6 +259,13 @@ Pythia8Hadronizer::Pythia8Hadronizer(const edm::ParameterSet &params)
 
   // avoid filling weights twice (from v8.30x)
   toHepMC.set_store_weights(false);
+
+  
+  if (params.exists("PhotonFlux")) {
+    edm::ParameterSet photonFluxParams = params.getParameter<edm::ParameterSet>("PhotonFlux");
+    doProtonPhotonFlux = photonFluxParams.getUntrackedParameter<bool>("doProtonPhotonFlux");
+    beamType = photonFluxParams.getUntrackedParameter<int>("beamType");
+  }
 
   // Reweight user hook
   //
@@ -413,8 +420,13 @@ bool Pythia8Hadronizer::initializeForInternalPartons() {
   }
 
   if (doProtonPhotonFlux) {
-    photonFlux = make_shared<Nucleus2gamma2>(2212);
-    fMasterGen->setPhotonFluxPtr(photonFlux, nullptr);
+    photonFlux = make_shared<Nucleus2gamma2>(beamType);
+    if(fMasterGen->settings.flag("PDF:beamA2gamma")){
+      fMasterGen->setPhotonFluxPtr(photonFlux, nullptr);
+    }
+    else{
+      fMasterGen->setPhotonFluxPtr(nullptr, photonFlux);
+    }
   }
 
   if (!fUserHooksVector.get())

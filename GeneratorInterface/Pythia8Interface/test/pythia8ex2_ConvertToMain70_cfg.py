@@ -12,7 +12,11 @@ process.generator = cms.EDFilter("Pythia8GeneratorFilter",
     filterEfficiency = cms.untracked.double(1.0),
     pythiaHepMCVerbosity = cms.untracked.bool(False),
     comEnergy = cms.double(5360.),
-    doProtonPhotonFlux = cms.untracked.bool(True),
+    PhotonFlux = cms.PSet(
+        parameterSets = cms.vstring('PhotonFlux'),
+        doProtonPhotonFlux = cms.untracked.bool(True),
+        beamType = cms.untracked.int32(1000822080)
+    ),
     #PPbarInitialState = cms.PSet(),
     #SLHAFileForPythia8 = cms.string('Configuration/Generator/data/CSA07SUSYBSM_LM9p_sftsdkpyt_slha.out'),
     #reweightGen = cms.PSet( # flat in pT
