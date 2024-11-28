@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = False):
     # DeepNtuple settings
-    jetCorrectionsAK4 = ('AK4PFchs', jetCorrLevels, 'None')
+    jetCorrectionsAK4 = ('AK4PF', jetCorrLevels, 'None')
 
     if doBtagging:
         bTagInfos = [
@@ -155,6 +155,8 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
             getattr(process, label).genJetMatch = ""
             getattr(process, label).genPartonMatch = ""
 
+    # left here for reference in case we want to move reclustering here
+    '''
     from PhysicsTools.PatAlgos.producersHeavyIons.heavyIonJets_cff import PackedPFTowers, hiPuRho
     process.PackedPFTowers = PackedPFTowers.clone()
     process.hiPuRho = hiPuRho.clone(
@@ -167,7 +169,7 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
     )
     for mod in ["PackedPFTowers", "hiPuRho", "akCs4PFJets"]:
         process.patAlgosToolsTask.add(getattr(process, mod))
-
+    '''
     # Create b-tagging sequence ----------------
     from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
     updateJetCollection(

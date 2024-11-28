@@ -137,7 +137,7 @@ addR3Jets = False
 addR4Jets = True
 
 if addR3Jets or addR4Jets :
-    process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
+    process.load("HeavyIonsAnalysis.JetAnalysis.extraJetsPP_cff")
     from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupPprefJets
 
     if addR3Jets :
@@ -146,7 +146,7 @@ if addR3Jets or addR4Jets :
         process.ak3PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute']
         process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAOD_cff")
         process.ak3PFJetAnalyzer = process.ak4PFJetAnalyzer.clone(jetTag = "ak3PFpatJets", jetName = 'ak3PF', genjetTag = "ak3GenJetsNoNu")
-        process.forest += process.extraPpJetsMC * process.jetsR3 * process.ak3PFJetAnalyzer
+        process.forest += process.extraJets * process.jetsR3 * process.ak3PFJetAnalyzer
 
     if addR4Jets :
         # Recluster using an alias "0" in order not to get mixed up with the default AK4 collections
@@ -158,4 +158,4 @@ if addR3Jets or addR4Jets :
         process.ak4PFJetAnalyzer.jetTag = 'ak04PFpatJets'
         process.ak4PFJetAnalyzer.jetName = 'ak04PF'
         process.ak4PFJetAnalyzer.doSubEvent = False # Need to disable this, since there is some issue with the gen jet constituents. More debugging needed is want to use constituents.
-        process.forest += process.extraPpJetsMC * process.jetsR4 * process.ak4PFJetAnalyzer
+        process.forest += process.extraJets * process.jetsR4 * process.ak4PFJetAnalyzer

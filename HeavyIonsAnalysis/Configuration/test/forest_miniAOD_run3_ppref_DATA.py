@@ -153,7 +153,6 @@ addR4Jets = True
 addR8Jets = True
 
 if addR2Jets or addR3Jets or addR4Jets or addR8Jets:
-    process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
     from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupPprefJets
 
     if addR2Jets :

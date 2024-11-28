@@ -4,7 +4,6 @@ from PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff import *
 from RecoJets.Configuration.RecoGenJets_cff import ak4GenJetsNoNu
 from RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi import pfImpactParameterTagInfos
 from RecoBTag.SecondaryVertex.pfSecondaryVertexTagInfos_cfi import pfSecondaryVertexTagInfos
-from RecoBTag.ImpactParameter.pfJetProbabilityBJetTags_cfi import pfJetProbabilityBJetTags
 from RecoBTag.Combined.pfDeepCSVTagInfos_cfi import pfDeepCSVTagInfos
 from RecoBTag.Combined.pfDeepCSVJetTags_cfi import pfDeepCSVJetTags
 
@@ -47,6 +46,7 @@ def setupHeavyIonJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'
                            process, sequence)
 
         # To find parton flavor for CS subtracted jets, they need to be matched with unsubtracted jets
+        # would need to be moved if you also want unsub jets for real data
         if matchJets:
 
             unsubtractedJetTag = "ak" + str(radiustag) + "PFMatchingFor" + tag
@@ -101,9 +101,10 @@ def setupHeavyIonJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'
 
         # Configuration for unsubtracted jets ready
         
-        # the whole rest of the function is only for unsubtracted jets
-        if noReclustering == False:
+    # matching for reclustered subtracted jets
+    if noReclustering == False:
 
+        if isMC:
             addToSequence( tag+'patJetPartonMatch',
                            patJetPartonMatch.clone(maxDeltaR = radius,
                                                    matched = 'hiSignalGenParticles',
@@ -130,40 +131,36 @@ def setupHeavyIonJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'
             
             # Monte Carlo specific collections added
 
-            addToSequence( tag+'pfImpactParameterTagInfos',
-                           pfImpactParameterTagInfos.clone(jets = tag +'Jets',
-                                                           candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVertices'),
-                           process, sequence)
-            
+        addToSequence( tag+'pfImpactParameterTagInfos',
+                       pfImpactParameterTagInfos.clone(jets = tag +'Jets',
+                                                       candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVertices'),
+                       process, sequence)
         
-            addToSequence( tag+'pfSecondaryVertexTagInfos',
-                           pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
-                           process, sequence)
         
-            addToSequence( tag+'pfDeepCSVTagInfos',
-                           pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
-                           process, sequence)
+        addToSequence( tag+'pfSecondaryVertexTagInfos',
+                       pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
+                       process, sequence)
         
-            addToSequence( tag+'pfDeepCSVJetTags',
-                           pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
-                           process, sequence)
-            
-            addToSequence( tag+'pfJetProbabilityBJetTags',
-                           pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
-                           process, sequence)
-            
-            addToSequence( tag+'patJets',
-                           patJets.clone(
-                               JetFlavourInfoSource = tag+'patJetFlavourAssociation',
-                               JetPartonMapSource = tag+'patJetFlavourAssociationLegacy',
-                               genJetMatch = tag+'patJetGenJetMatch',
-                               genPartonMatch = tag+'patJetPartonMatch',
-                               jetCorrFactorsSource = cms.VInputTag(tag+'patJetCorrFactors'),
-                               jetSource = tag+'Jets',
-                               discriminatorSources = cms.VInputTag(cms.InputTag(tag+'pfDeepCSVJetTags','probb'), cms.InputTag(tag+'pfDeepCSVJetTags','probc'), cms.InputTag(tag+'pfDeepCSVJetTags','probudsg'), cms.InputTag(tag+'pfDeepCSVJetTags','probbb'), cms.InputTag(tag+'pfJetProbabilityBJetTags')),
-                               addAssociatedTracks = False,
-                           ),
-                           process, sequence)
+        addToSequence( tag+'pfDeepCSVTagInfos',
+                       pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
+                       process, sequence)
+        
+        addToSequence( tag+'pfDeepCSVJetTags',
+                       pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
+                       process, sequence)
+        
+        addToSequence( tag+'patJets',
+                       patJets.clone(
+                           JetFlavourInfoSource = tag+'patJetFlavourAssociation',
+                           JetPartonMapSource = tag+'patJetFlavourAssociationLegacy',
+                           genJetMatch = tag+'patJetGenJetMatch',
+                           genPartonMatch = tag+'patJetPartonMatch',
+                           jetCorrFactorsSource = cms.VInputTag(tag+'patJetCorrFactors'),
+                           jetSource = tag+'Jets',
+                           discriminatorSources = cms.VInputTag(cms.InputTag(tag+'pfDeepCSVJetTags','probb'), cms.InputTag(tag+'pfDeepCSVJetTags','probc'), cms.InputTag(tag+'pfDeepCSVJetTags','probudsg'), cms.InputTag(tag+'pfDeepCSVJetTags','probbb')),
+                           addAssociatedTracks = False,
+                       ),
+                       process, sequence)
 
 def setupPprefJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'):
 
@@ -232,10 +229,6 @@ def setupPprefJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'):
                    pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
                    process, sequence)
 
-    addToSequence( tag+'pfJetProbabilityBJetTags',
-                   pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
-                   process, sequence)
-
     addToSequence( tag+'patJets',
                    patJets.clone(
                        jetSource = tag+'Jets',
@@ -246,7 +239,7 @@ def setupPprefJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'):
                        jetCorrFactorsSource = cms.VInputTag(tag+'patJetCorrFactors'),
                        trackAssociationSource = "",
                        useLegacyJetMCFlavour = True,
-                       discriminatorSources = cms.VInputTag(cms.InputTag(tag+'pfDeepCSVJetTags','probb'), cms.InputTag(tag+'pfDeepCSVJetTags','probc'), cms.InputTag(tag+'pfDeepCSVJetTags','probudsg'), cms.InputTag(tag+'pfDeepCSVJetTags','probbb'), cms.InputTag(tag+'pfJetProbabilityBJetTags')),
+                       discriminatorSources = cms.VInputTag(cms.InputTag(tag+'pfDeepCSVJetTags','probb'), cms.InputTag(tag+'pfDeepCSVJetTags','probc'), cms.InputTag(tag+'pfDeepCSVJetTags','probudsg'), cms.InputTag(tag+'pfDeepCSVJetTags','probbb')),
                        tagInfoSources = [],
                        addJetCharge = False,
                        addTagInfos = False,
