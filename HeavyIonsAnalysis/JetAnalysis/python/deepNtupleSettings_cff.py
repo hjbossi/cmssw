@@ -91,16 +91,17 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
         jetPtMin = 5.  # set lower than subtracted version
     )
 
-    from PhysicsTools.JetMCAlgos.HadronAndPartonSelector_cfi import selectedHadronsAndPartons
-    from PhysicsTools.JetMCAlgos.AK4PFJetsMCFlavourInfos_cfi import ak4JetFlavourInfos
-    process.selectedHadronsAndPartons = selectedHadronsAndPartons.clone(particles = "prunedGenParticles")
-    process.ak4PFUnsubJetFlavourInfos = ak4JetFlavourInfos.clone(
-        jets = "ak4PFUnsubJets",
-        partons = "selectedHadronsAndPartons:algorithmicPartons",
-        hadronFlavourHasPriority = True
-    )
-    process.genTask.add(process.selectedHadronsAndPartons)
-    process.genTask.add(process.ak4PFUnsubJetFlavourInfos)
+    if isMC:
+        from PhysicsTools.JetMCAlgos.HadronAndPartonSelector_cfi import selectedHadronsAndPartons
+        from PhysicsTools.JetMCAlgos.AK4PFJetsMCFlavourInfos_cfi import ak4JetFlavourInfos
+        process.selectedHadronsAndPartons = selectedHadronsAndPartons.clone(particles = "prunedGenParticles")
+        process.ak4PFUnsubJetFlavourInfos = ak4JetFlavourInfos.clone(
+            jets = "ak4PFUnsubJets",
+            partons = "selectedHadronsAndPartons:algorithmicPartons",
+            hadronFlavourHasPriority = True
+        )
+        process.genTask.add(process.selectedHadronsAndPartons)
+        process.genTask.add(process.ak4PFUnsubJetFlavourInfos)
 
     from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
     addJetCollection(
