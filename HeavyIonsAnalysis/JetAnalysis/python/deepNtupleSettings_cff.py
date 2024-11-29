@@ -1,8 +1,12 @@
 import FWCore.ParameterSet.Config as cms
 
-def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = False):
+def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = False, labelR = "0"):
     # DeepNtuple settings
-    jetCorrectionsAK4 = ('AK4PF', jetCorrLevels, 'None')
+    jetR = 0.1*int(labelR)
+    if labelR == "0": jetR = 0.4
+
+    jetCorrectionsAK4 = ('AK4PF' if labelR == "0" else 'AK'+labelR+'PF', jetCorrLevels, 'None')
+
 
     if doBtagging:
         bTagInfos = [
@@ -53,17 +57,22 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
             src = 'hiSignalGenParticles'
         )
         from RecoJets.JetProducers.ak4GenJets_cfi import ak4GenJets
-        process.ak4GenJetsWithNu = ak4GenJets.clone(
-            src = 'packedGenParticlesSignal'
+        setattr(process,"ak"+labelR+"GenJetsWithNu",
+                ak4GenJets.clone(
+                    src = 'packedGenParticlesSignal',
+                    rParam = jetR
+                )
         )
         process.packedGenParticlesForJetsNoNu = cms.EDFilter("CandPtrSelector",
             src = cms.InputTag("packedGenParticlesSignal"),
             cut = cms.string("abs(pdgId) != 12 && abs(pdgId) != 14 && abs(pdgId) != 16")
         )
-        process.ak4GenJetsRecluster = ak4GenJets.clone(
-            src = 'packedGenParticlesForJetsNoNu'
+        setattr(process,"ak"+labelR+"GenJetsRecluster",
+                ak4GenJets.clone(
+                    src = 'packedGenParticlesForJetsNoNu'
+                )
         )
-        process.genTask = cms.Task(process.hiSignalGenParticles, process.allPartons, process.ak4GenJetsWithNu, process.packedGenParticlesForJetsNoNu, process.ak4GenJetsRecluster)
+        process.genTask = cms.Task(process.hiSignalGenParticles, process.allPartons, getattr(process,"ak"+labelR+"GenJetsWithNu"), process.packedGenParticlesForJetsNoNu, getattr(process,"ak"+labelR+"GenJetsRecluster"))
 
     # Remake secondary vertices
     from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import inclusiveCandidateVertexFinder, candidateVertexMerger, candidateVertexArbitrator, inclusiveCandidateSecondaryVertices
@@ -85,69 +94,83 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
     # Create unsubtracted reco jets
 
     from PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff import ak4PFJets
-    process.ak4PFUnsubJets = ak4PFJets.clone(
-        src = 'packedPFCandidates',
-        #jetPtMin = jetPtMin
-        jetPtMin = 5.  # set lower than subtracted version
+    setattr(process, "ak"+labelR+"PFUnsubJets", 
+            ak4PFJets.clone(
+                src = 'packedPFCandidates',
+                jetPtMin = 5.,  # set lower than subtracted version
+                rParam = jetR
+            )
     )
+    
 
     if isMC:
         from PhysicsTools.JetMCAlgos.HadronAndPartonSelector_cfi import selectedHadronsAndPartons
         from PhysicsTools.JetMCAlgos.AK4PFJetsMCFlavourInfos_cfi import ak4JetFlavourInfos
         process.selectedHadronsAndPartons = selectedHadronsAndPartons.clone(particles = "prunedGenParticles")
-        process.ak4PFUnsubJetFlavourInfos = ak4JetFlavourInfos.clone(
-            jets = "ak4PFUnsubJets",
-            partons = "selectedHadronsAndPartons:algorithmicPartons",
-            hadronFlavourHasPriority = True
+        setattr(process,"ak"+labelR+"PFUnsubJetFlavourInfos",
+                ak4JetFlavourInfos.clone(
+                    jets = "ak"+labelR+"PFUnsubJets",
+                    partons = "selectedHadronsAndPartons:algorithmicPartons",
+                    hadronFlavourHasPriority = True,
+                    rParam = jetR
+                )
         )
         process.genTask.add(process.selectedHadronsAndPartons)
-        process.genTask.add(process.ak4PFUnsubJetFlavourInfos)
+        process.genTask.add(getattr(process,"ak"+labelR+"PFUnsubJetFlavourInfos"))
+
+    matchedGenJets = ""
+    if isMC:
+        if labelR == "0": matchedGenJets = "slimmedGenJets"
+        else: matchedGenJets  = "ak"+labelR+"GenJetsWithNu"
+
+
 
     from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
     addJetCollection(
         process,
         postfix            = "UnsubJets",
-        labelName          = "AK4PF",
-        jetSource          = cms.InputTag("ak4PFUnsubJets"),
+        labelName          = str("AK"+labelR+"PF"),
+        jetSource          = cms.InputTag("ak"+labelR+"PFUnsubJets"),
         algo               = "ak", #name of algo must be in this format
-        rParam             = 0.4,
+        rParam             = jetR,
         pvSource           = cms.InputTag("offlineSlimmedPrimaryVertices"),
         pfCandidates       = cms.InputTag("packedPFCandidates"),
         svSource           = svSource,
         muSource           = cms.InputTag("slimmedMuons"),
         elSource           = cms.InputTag("slimmedElectrons"),
         getJetMCFlavour    = isMC,
-        genJetCollection   = cms.InputTag("ak4GenJetsWithNu" if isMC else ""),
+        genJetCollection   = cms.InputTag(matchedGenJets),
         genParticles       = cms.InputTag("hiSignalGenParticles" if isMC else ""),
-        jetCorrections     = ('AK4PF',) + jetCorrectionsAK4[1:],
+        jetCorrections     = ('AK4PF' if labelR=='0' else 'AK'+labelR+'PF',) + jetCorrectionsAK4[1:],
     )
-    process.patJetsAK4PFUnsubJets.useLegacyJetMCFlavour = False
 
-    process.patAlgosToolsTask.add(process.ak4PFUnsubJets)
+    getattr(process,"patJetsAK"+labelR+"PFUnsubJets").useLegacyJetMCFlavour = False
+
+    process.patAlgosToolsTask.add(getattr(process,"ak"+labelR+"PFUnsubJets"))
 
     # Create HIN subtracted reco jets
     from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
     addJetCollection(
         process,
         postfix            = "",
-        labelName          = "AKCs4PF",
-        jetSource          = cms.InputTag("akCs4PFJets"),
+        labelName          = "AKCs"+labelR+"PF",
+        jetSource          = cms.InputTag("akCs"+labelR+"PFJets"),
         algo               = "ak", #name of algo must be in this format
-        rParam             = 0.4,
+        rParam             = jetR,
         pvSource           = cms.InputTag("offlineSlimmedPrimaryVertices"),
         pfCandidates       = cms.InputTag("packedPFCandidates"),
         svSource           = svSource,
         muSource           = cms.InputTag("slimmedMuons"),
         elSource           = cms.InputTag("slimmedElectrons"),
         getJetMCFlavour    = isMC,
-        genJetCollection   = cms.InputTag("ak4GenJetsWithNu" if isMC else ""),
+        genJetCollection   = cms.InputTag(matchedGenJets),
         genParticles       = cms.InputTag("hiSignalGenParticles" if isMC else ""),
         jetCorrections     = jetCorrectionsAK4,
     )
-    process.patJetsAKCs4PF.embedPFCandidates = True
+    getattr(process,"patJetsAKCs"+labelR+"PF").embedPFCandidates = True
 
     if not isMC:
-        for label in ["patJetsAK4PFUnsubJets", "patJetsAKCs4PF"]:
+        for label in ["patJetsAK"+labelR+"PFUnsubJets", "patJetsAKCs"+labelR+"PF"]:
             getattr(process, label).addGenJetMatch = False
             getattr(process, label).addGenPartonMatch = False
             getattr(process, label).embedGenJetMatch = False
@@ -156,27 +179,28 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
             getattr(process, label).genPartonMatch = ""
 
     # left here for reference in case we want to move reclustering here
-    '''
     from PhysicsTools.PatAlgos.producersHeavyIons.heavyIonJets_cff import PackedPFTowers, hiPuRho
     process.PackedPFTowers = PackedPFTowers.clone()
     process.hiPuRho = hiPuRho.clone(
         src = 'PackedPFTowers'
     )
     from PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff import akCs4PFJets
-    process.akCs4PFJets = akCs4PFJets.clone(
-        src = 'packedPFCandidates',
-        jetPtMin = jetPtMin
+    setattr(process,"akCs"+labelR+"PFJets",
+            akCs4PFJets.clone(
+                src = 'packedPFCandidates',
+                jetPtMin = jetPtMin,
+                rParam = jetR
+            )
     )
-    for mod in ["PackedPFTowers", "hiPuRho", "akCs4PFJets"]:
+    for mod in ["PackedPFTowers", "hiPuRho", "akCs"+labelR+"PFJets"]:
         process.patAlgosToolsTask.add(getattr(process, mod))
-    '''
+
     # Create b-tagging sequence ----------------
     from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
     updateJetCollection(
         process,
         labelName = "DeepFlavour",
-        #jetSource = cms.InputTag('patJetsAKCs4PF'), # 'ak4Jets'  # for reclustered jet workflows
-        jetSource = cms.InputTag('slimmedJets'), # 'ak4Jets'
+        jetSource = cms.InputTag("slimmedJets" if labelR == "0" else "patJetsAKCs"+labelR+"PF"), 
         jetCorrections = jetCorrectionsAK4,
         pfCandidates = cms.InputTag('packedPFCandidates'),
         pvSource = cms.InputTag("offlineSlimmedPrimaryVertices"),
@@ -190,7 +214,7 @@ def candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = 15, jetCorrLevels 
 
     process.unsubUpdatedPatJetsDeepFlavour = cms.EDProducer("JetMatcherDR",
                                                             source = cms.InputTag("updatedPatJetsDeepFlavour"),
-                                                            matched = cms.InputTag("patJetsAK4PFUnsubJets")
+                                                            matched = cms.InputTag("patJetsAK"+labelR+"PFUnsubJets")
     )
     process.patAlgosToolsTask.add(process.unsubUpdatedPatJetsDeepFlavour)
 
