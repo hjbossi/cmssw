@@ -157,7 +157,7 @@ jetAbsEtaMax = 2.5
 # Choose which additional information is added to jet trees
 doHIJetID = True             # Fill jet ID and composition information branches
 doWTARecluster = True        # Add jet phi and eta for WTA axis
-doBtagging  =  True         # Note that setting to True increases computing time a lot
+doBtagging  =  False         # Note that setting to True increases computing time a lot
 
 # 0 means use original mini-AOD jets, otherwise use R value, e.g., 3,4,8
 jetLabel = "0"
@@ -184,9 +184,7 @@ process.forest += getattr(process,"akCs"+jetLabel+"PFJetAnalyzer")
 
 # Options for reclustering jets with different parameters. 
 # TODO:  Integrate with deepNtupleSettings script above -Matt
-addR3Jets = False
 addR3FlowJets = False
-addR4Jets = False
 addR4FlowJets = False
 addUnsubtractedR4Jets = False
 
