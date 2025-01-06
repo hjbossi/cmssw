@@ -149,25 +149,24 @@ process.pprimaryVertexFilter = cms.Path(process.primaryVertexFilter)
 
 
 #####################################################################################
-# Select the types of jets filled                                                                                                                                           
-                
-matchJets = True             # Enables q/g and heavy flavor jet identification in MC                                                                        
+# Select the types of jets filled
+matchJets = True             # Enables q/g and heavy flavor jet identification in MC
 jetPtMin = 15
 jetAbsEtaMax = 2.5
 
-# Choose which additional information is added to jet trees                                                                                                                  
-doHIJetID = True             # Fill jet ID and composition information branches                                                                                              
-doWTARecluster = False        # Add jet phi and eta for WTA axis                                                                                                          
-doBtagging  =  False         # Note that setting to True increases computing time a lot                                                                                      
-                       
-# 0 means use original mini-AOD jets, otherwise use R value, e.g., 3,4,8                                                                                                  
+# Choose which additional information is added to jet trees
+doHIJetID = True             # Fill jet ID and composition information branches
+doWTARecluster = False        # Add jet phi and eta for WTA axis
+doBtagging  =  False         # Note that setting to True increases computing time a lot
+
+# 0 means use original mini-AOD jets, otherwise use R value, e.g., 3,4,8
 jetLabel = "0"
 
-# add candidate tagging, copy/paste to add other jet radii                                                                                                                   
+# add candidate tagging, copy/paste to add other jet radii
 from HeavyIonsAnalysis.JetAnalysis.setupJets_ppRef_cff import candidateBtaggingMiniAOD
 candidateBtaggingMiniAOD(process, isMC = False, jetPtMin = jetPtMin, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = doBtagging, labelR = jetLabel)
-# setup jet analyzer                                                   
-                                                                      
+# setup jet analyzer
+
 setattr(process,"ak"+jetLabel+"PFJetAnalyzer",process.ak4PFJetAnalyzer.clone())
 getattr(process,"ak"+jetLabel+"PFJetAnalyzer").jetTag = 'selectedUpdatedPatJetsDeepFlavour'
 getattr(process,"ak"+jetLabel+"PFJetAnalyzer").jetName = 'ak'+jetLabel+'PF'
