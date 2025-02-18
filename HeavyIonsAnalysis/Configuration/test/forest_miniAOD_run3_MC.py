@@ -147,9 +147,11 @@ jetAbsEtaMax = 2.5
 # Choose which additional information is added to jet trees
 doHIJetID = True             # Fill jet ID and composition information branches
 doWTARecluster = False        # Add jet phi and eta for WTA axis
-doBtagging  =  False         # Note that setting to True increases computing time a lot
+doBtagging = False           # Note that setting to True increases computing time a lot
 
 # 0 means use original mini-AOD jets, otherwise use R value, e.g., 3,4,8
+# Generator level jets in original miniAOD jets contain neutrinos
+# You will need to do reclustering with R-value to get generator level jets without neutrinos
 # Add all the values you want to process to the list
 # These will create collections of CS subtracted jets (only eta dependent background)
 jetLabelsCS = ["4"]
@@ -179,7 +181,7 @@ for jetLabel in allJetLabels:
     getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetAbsEtaMax = cms.untracked.double(jetAbsEtaMax)
     getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").rParam = 0.4 if jetLabel=="0" else  float(jetLabel.replace("Flow",""))*0.1
     getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetFlavourInfos = "ak"+jetLabel+"PFUnsubJetFlavourInfos"
-    if jetLabel!="0": getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genjetTag = "ak"+jetLabel+"GenJetsWithNu"
+    if jetLabel != "0": getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genjetTag = "ak"+jetLabel+"GenJetsReclusterNoNu"
     if doBtagging:
         getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").useNewBtaggers = True
         getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").pfJetProbabilityBJetTag = cms.untracked.string("pfJetProbabilityBJetTagsAK"+jetLabel+"PFBtag")
